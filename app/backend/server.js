@@ -14,4 +14,13 @@ app.get("/api", (req, res) => {
   res.json({ message: "Backend working!" });
 });
 
+// Check if MongoDB is connected (readyState: 1 = connected)
+app.get("/api/health", (req, res) => {
+  const dbConnected = mongoose.connection.readyState === 1;
+  res.json({
+    backend: "OK",
+    database: dbConnected ? "Connected" : "Disconnected",
+  });
+});
+
 app.listen(PORT, () => console.log(`Backend running on ${PORT}`));
