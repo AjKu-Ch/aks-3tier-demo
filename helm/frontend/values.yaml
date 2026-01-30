@@ -1,0 +1,11 @@
+replicaCount: 1
+
+image:
+  repository: my-frontend
+  tag: latest
+  pullPolicy: Never
+
+service:
+  type: LoadBalancer
+  port: 80
+

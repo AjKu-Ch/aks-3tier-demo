@@ -1,0 +1,10 @@
+replicaCount: 1
+
+image:
+  repository: mongo
+  tag: "6"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 27017
