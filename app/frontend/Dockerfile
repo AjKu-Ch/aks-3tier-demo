@@ -2,13 +2,12 @@
 FROM node:18 AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci        # or npm install
+RUN npm install
 COPY . .
-RUN npm run build # Vite/React builds to dist/
+RUN npm run build 
 
 # --- Runtime stage ---
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
-# (Optional but recommended for SPA routing)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
