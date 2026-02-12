@@ -22,18 +22,18 @@ spec:
           ports:
             - containerPort: {{ .Values.service.port }}
 
-          {{- if .Values.persistence.enabled }}
+          {{- if (index .Values "persistence" "enabled" | default false) }}
           volumeMounts:
-            - name: {{ .Values.persistence.volumeName }}
-              mountPath: {{ .Values.persistence.mountPath }}
-              {{- if .Values.persistence.subPath }}
-              subPath: {{ .Values.persistence.subPath }}
+            - name: {{ (index .Values "persistence" "volumeName") }}
+              mountPath: {{ (index .Values "persistence" "mountPath") }}
+              {{- if (index .Values "persistence" "subPath") }}
+              subPath: {{ (index .Values "persistence" "subPath") }}
               {{- end }}
           {{- end }}
 
-      {{- if .Values.persistence.enabled }}
+      {{- if (index .Values "persistence" "enabled" | default false) }}
       volumes:
-        - name: {{ .Values.persistence.volumeName }}
+        - name: {{ (index .Values "persistence" "volumeName") }}
           persistentVolumeClaim:
-            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-%s" (include "backend.fullname" .) "pvc") }}
+            claimName: {{ (index .Values "persistence" "existingClaim") | default (printf "%s-%s" (include "backend.fullname" .) "pvc") }}
       {{- end }}
