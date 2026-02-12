@@ -2,7 +2,9 @@ name: App - Docker Build and Helm Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: 
+      - main
+      - 'feature/*'
     paths:
       - "app/**"
       - "helm/**"
