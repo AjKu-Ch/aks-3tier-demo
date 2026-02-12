@@ -22,24 +22,4 @@ spec:
           ports:
             - containerPort: {{ .Values.service.port }}
 
-          {{- /* Bind persistence map safely; if missing, use empty dict */}}
-          {{- $p := (default (dict) .Values.persistence) }}
 
-          {{- if (get $p "enabled") }}
-          volumeMounts:
-            - name: {{ (get $p "volumeName") | default "backend-data" }}
-              mountPath: {{ (get $p "mountPath") | default "/app/data" }}
-              {{- if (get $p "subPath") }}
-              subPath: {{ (get $p "subPath") }}
-              {{- end }}
-          {{- end }}
-
-      {{- /* Reuse the same bound map at this scope too */}}
-      {{- $p := (default (dict) .Values.persistence) }}
-      {{- if (get $p "enabled") }}
-      volumes:
-        - name: {{ (get $p "volumeName") | default "backend-data" }}
-          persistentVolumeClaim:
-            claimName: {{ (get $p "existingClaim") | default (printf "%s-%s" (include "backend.fullname" .) "pvc") }}
-      {{- end }}
-``
