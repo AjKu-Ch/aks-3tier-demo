@@ -22,6 +22,7 @@ spec:
           ports:
             - containerPort: {{ .Values.service.port }}
 
+<<<<<<< HEAD
           {{- if .Values.persistence.enabled }}
           volumeMounts:
             - name: {{ .Values.persistence.volumeName }}
@@ -37,3 +38,6 @@ spec:
           persistentVolumeClaim:
             claimName: {{ .Values.persistence.existingClaim | default (printf "%s-%s" (include "backend.fullname" .) "pvc") }}
       {{- end }}
+=======
+
+>>>>>>> 145fe24c6a71e20e1028de843924ffa571b81c5f
