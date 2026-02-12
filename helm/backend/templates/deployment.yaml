@@ -22,18 +22,24 @@ spec:
           ports:
             - containerPort: {{ .Values.service.port }}
 
-          {{- if (dig "persistence" "enabled" false .Values) }}
+          {{- /* Bind persistence map safely; if missing, use empty dict */}}
+          {{- $p := (default (dict) .Values.persistence) }}
+
+          {{- if (get $p "enabled") }}
           volumeMounts:
-            - name: {{ (dig "persistence" "volumeName" "" .Values) | default "backend-data" }}
-              mountPath: {{ (dig "persistence" "mountPath" "" .Values) | default "/app/data" }}
-              {{- if (dig "persistence" "subPath" "" .Values) }}
-              subPath: {{ (dig "persistence" "subPath" "" .Values) }}
+            - name: {{ (get $p "volumeName") | default "backend-data" }}
+              mountPath: {{ (get $p "mountPath") | default "/app/data" }}
+              {{- if (get $p "subPath") }}
+              subPath: {{ (get $p "subPath") }}
               {{- end }}
           {{- end }}
 
-      {{- if (dig "persistence" "enabled" false .Values) }}
+      {{- /* Reuse the same bound map at this scope too */}}
+      {{- $p := (default (dict) .Values.persistence) }}
+      {{- if (get $p "enabled") }}
       volumes:
-        - name: {{ (dig "persistence" "volumeName" "" .Values) | default "backend-data" }}
+        - name: {{ (get $p "volumeName") | default "backend-data" }}
           persistentVolumeClaim:
-            claimName: {{ (dig "persistence" "existingClaim" "" .Values) | default (printf "%s-%s" (include "backend.fullname" .) "pvc") }}
+            claimName: {{ (get $p "existingClaim") | default (printf "%s-%s" (include "backend.fullname" .) "pvc") }}
       {{- end }}
+``
