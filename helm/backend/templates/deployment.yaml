@@ -22,18 +22,18 @@ spec:
           ports:
             - containerPort: {{ .Values.service.port }}
 
-          {{- if (index .Values "persistence" "enabled" | default false) }}
+          {{- if (dig "persistence" "enabled" false .Values) }}
           volumeMounts:
-            - name: {{ (index .Values "persistence" "volumeName") }}
-              mountPath: {{ (index .Values "persistence" "mountPath") }}
-              {{- if (index .Values "persistence" "subPath") }}
-              subPath: {{ (index .Values "persistence" "subPath") }}
+            - name: {{ (dig "persistence" "volumeName" "" .Values) | default "backend-data" }}
+              mountPath: {{ (dig "persistence" "mountPath" "" .Values) | default "/app/data" }}
+              {{- if (dig "persistence" "subPath" "" .Values) }}
+              subPath: {{ (dig "persistence" "subPath" "" .Values) }}
               {{- end }}
           {{- end }}
 
-      {{- if (index .Values "persistence" "enabled" | default false) }}
+      {{- if (dig "persistence" "enabled" false .Values) }}
       volumes:
-        - name: {{ (index .Values "persistence" "volumeName") }}
+        - name: {{ (dig "persistence" "volumeName" "" .Values) | default "backend-data" }}
           persistentVolumeClaim:
-            claimName: {{ (index .Values "persistence" "existingClaim") | default (printf "%s-%s" (include "backend.fullname" .) "pvc") }}
+            claimName: {{ (dig "persistence" "existingClaim" "" .Values) | default (printf "%s-%s" (include "backend.fullname" .) "pvc") }}
       {{- end }}
