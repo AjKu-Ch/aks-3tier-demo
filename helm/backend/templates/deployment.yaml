@@ -21,3 +21,19 @@ spec:
               value: {{ .Values.env.MONGO_URL | quote }}
           ports:
             - containerPort: {{ .Values.service.port }}
+
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: {{ .Values.persistence.volumeName }}
+              mountPath: {{ .Values.persistence.mountPath }}
+              {{- if .Values.persistence.subPath }}
+              subPath: {{ .Values.persistence.subPath }}
+              {{- end }}
+          {{- end }}
+
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: {{ .Values.persistence.volumeName }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-%s" (include "backend.fullname" .) "pvc") }}
+      {{- end }}
