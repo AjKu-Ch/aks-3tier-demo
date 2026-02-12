@@ -1,0 +1,8 @@
+@"
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+crash.log
+crash.*.log
+node_modules/
+"@ | Out-File -FilePath .gitignore -Append
