@@ -1,8 +1,20 @@
-@"
+# Terraform local state & caches
 .terraform/
-terraform.tfstate
-terraform.tfstate.*
+.terraform.tfstate.lock.info
+*.tfstate
+*.tfstate.*
 crash.log
-crash.*.log
-node_modules/
-"@ | Out-File -FilePath .gitignore -Append
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Common OS/editor noise
+.DS_Store
+Thumbs.db
+
+# Avoid committing random binaries
+*.exe
+*.zip
+*.tar
+*.tar.gz
