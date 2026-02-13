@@ -2,42 +2,44 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
+  labels:
+    app: backend
+    chart: backend
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.replicaCount | default 1 }}
   selector:
     matchLabels:
       app: backend
+      release: {{ .Release.Name }}
   template:
     metadata:
       labels:
         app: backend
+        release: {{ .Release.Name }}
     spec:
       containers:
         - name: backend
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 3000
           env:
             - name: MONGO_URL
               value: {{ .Values.env.MONGO_URL | quote }}
-          ports:
-            - containerPort: {{ .Values.service.port }}
+            - name: FRONTEND_ORIGIN
+              value: {{ .Values.env.FRONTEND_ORIGIN | quote }}
 
-<<<<<<< HEAD
-          {{- if .Values.persistence.enabled }}
-          volumeMounts:
-            - name: {{ .Values.persistence.volumeName }}
-              mountPath: {{ .Values.persistence.mountPath }}
-              {{- if .Values.persistence.subPath }}
-              subPath: {{ .Values.persistence.subPath }}
-              {{- end }}
-          {{- end }}
-
-      {{- if .Values.persistence.enabled }}
-      volumes:
-        - name: {{ .Values.persistence.volumeName }}
-          persistentVolumeClaim:
-            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-%s" (include "backend.fullname" .) "pvc") }}
-      {{- end }}
-=======
-
->>>>>>> 145fe24c6a71e20e1028de843924ffa571b81c5f
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5

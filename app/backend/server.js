@@ -1,10 +1,12 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGO_URL = process.env.MONGO_URL || "mongodb://mongodb:27017/testdb";
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://52.151.203.181";
+
 const corsOptions = {
   origin: [FRONTEND_ORIGIN],
   methods: ["GET", "POST", "OPTIONS"],
@@ -12,7 +14,6 @@ const corsOptions = {
   credentials: false
 };
 app.use(cors(corsOptions));
-app.options("*_", cors(corsOptions));    // explicit preflight handler
 app.use(express.json());
 
 // Connect to Mongo
@@ -20,19 +21,25 @@ mongoose.connect(MONGO_URL)
   .then(() => console.log("Mongo connected"))
   .catch(err => console.error("Mongo connection error:", err));
 
-// Simple schema+model
+// Model
 const itemSchema = new mongoose.Schema({
   name: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 });
 const Item = mongoose.model("Item", itemSchema);
 
-// Health/info endpoint
-app.get("/api", (req, res) => {
-  res.json({ message: "Backend working!", mongoUrl: MONGO_URL });
+// Probes
+app.get("/api/health", (req, res) => {
+  const mongoState = mongoose.connection.readyState; // 0..3
+  res.status(mongoState === 1 ? 200 : 503).json({ service: "backend", mongoConnected: mongoState === 1 });
 });
 
-// List items
+// ✅ this is required by your frontend to show “Backend working!”
+app.get("/api", (req, res) => {
+  res.json({ message: "Backend working!" });
+});
+
+// Data APIs
 app.get("/api/items", async (req, res) => {
   try {
     const items = await Item.find().sort({ createdAt: -1 }).lean();
@@ -43,7 +50,6 @@ app.get("/api/items", async (req, res) => {
   }
 });
 
-// Create item
 app.post("/api/items", async (req, res) => {
   try {
     const { name } = req.body;

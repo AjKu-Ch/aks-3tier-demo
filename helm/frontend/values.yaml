@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: ajaykumarchoda8143/frontend
-  tag: v1
+  tag: v10
   pullPolicy: IfNotPresent
 
 service:

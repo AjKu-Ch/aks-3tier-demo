@@ -1,12 +1,24 @@
-replicaCount: 2
+replicaCount: 1
 
 image:
   repository: ajaykumarchoda8143/backend
-  tag: v1
+  tag: v17
   pullPolicy: IfNotPresent
 
 service:
+  type: LoadBalancer
   port: 3000
 
 env:
-  MONGO_URL: mongodb://mongodb:27017/testdb
+  MONGO_URL: "mongodb://mongodb:27017/testdb"
+  FRONTEND_ORIGIN: "http://52.151.203.181"  
+
+resources: {}
+
+persistence:
+  enabled: false
+  mountPath: /data
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  storageClassName: ""
