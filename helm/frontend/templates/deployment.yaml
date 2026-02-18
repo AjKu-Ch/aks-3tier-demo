@@ -18,4 +18,17 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: 80
+          
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: frontend-data
+              mountPath: {{ .Values.persistence.mountPath }}
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: frontend-data
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.existingClaim }}{{ .Values.persistence.existingClaim }}{{ else }}{{ include "frontend.fullname" . }}-pvc{{ end }}
+      {{- end }}
+
 

@@ -9,3 +9,11 @@ service:
   type: LoadBalancer
   port: 80
 
+persistence:
+  enabled: true
+  storageClassName: azurefile-csi
+  size: 5Gi
+  accessModes:
+    - ReadWriteMany    
+  mountPath: /data
+  existingClaim: ""              
