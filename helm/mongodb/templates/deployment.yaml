@@ -20,7 +20,9 @@ spec:
             - containerPort: 27017
           volumeMounts:
             - name: mongo-storage
-              mountPath: /data/db
+              mountPath: {{ .Values.persistence.mountPath }}
       volumes:
         - name: mongo-storage
-          emptyDir: {}
+          persistentVolumeClaim:            
+            claimName: {{ if .Values.persistence.existingClaim }}{{ .Values.persistence.existingClaim }}{{ else }}{{ include "mongodb.fullname" . }}-pvc{{ end }}
+

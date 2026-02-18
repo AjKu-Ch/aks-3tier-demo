@@ -8,3 +8,14 @@ image:
 service:
   type: ClusterIP
   port: 27017
+
+
+persistence:
+  enabled: true
+  storageClass: default
+  size: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  mountPath: /data/db
+  existingClaim: ""
+
