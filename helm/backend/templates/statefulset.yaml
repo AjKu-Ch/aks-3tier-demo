@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "backend.fullname" . }}
+  labels:
+    {{- include "backend.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicas | default 2 }}
+  serviceName: {{ include "backend.headlessName" . }}
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      {{- include "backend.selectorLabels" . | nindent 6 }}
+
+  template:
+    metadata:
+      labels:
+        {{- include "backend.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print .Template.BasePath "/configmap.yaml") . | sha256sum | default "no-config" | quote }}
+
+    spec:
+      {{- with .Values.backend.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+
+      {{- if .Values.backend.topologySpread.enabled }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "backend.selectorLabels" . | nindent 14 }}
+      {{- end }}
+
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy | default "IfNotPresent" }}
+
+          ports:
+            - name: http
+              containerPort: {{ .Values.backend.port | default 8080 }}
+
+          env:
+
+            {{- range $k, $v := .Values.backend.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- if .Values.backend.mongoUri }}
+            - name: MONGO_URI
+              value: {{ .Values.backend.mongoUri | quote }}
+            {{- end }}
+
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.backend.storage.mountPath | default "/app/data" }}
+
+
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.backend.probes.readiness.path | default "/healthz" }}
+              port: http
+            initialDelaySeconds: {{ .Values.backend.probes.readiness.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.backend.probes.readiness.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.backend.probes.readiness.timeoutSeconds | default 2 }}
+            failureThreshold: {{ .Values.backend.probes.readiness.failureThreshold | default 3 }}
+
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.backend.probes.liveness.path | default "/livez" }}
+              port: http
+            initialDelaySeconds: {{ .Values.backend.probes.liveness.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.backend.probes.liveness.periodSeconds | default 15 }}
+            timeoutSeconds: {{ .Values.backend.probes.liveness.timeoutSeconds | default 2 }}
+            failureThreshold: {{ .Values.backend.probes.liveness.failureThreshold | default 3 }}
+
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+
+          securityContext:
+            {{- toYaml .Values.backend.securityContext | nindent 12 }}
+
+      securityContext:
+        {{- toYaml .Values.backend.podSecurityContext | nindent 8 }}
+
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "backend.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - {{ .Values.backend.storage.accessMode | default "ReadWriteOnce" }}
+        storageClassName: {{ .Values.backend.storage.storageClassName | default "default" | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.backend.storage.size | default "1Gi" }}
