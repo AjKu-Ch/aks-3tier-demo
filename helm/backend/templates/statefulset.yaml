@@ -190,4 +190,7 @@ spec:
         storageClassName: {{ $sc | quote }}
         resources:
           requests:
-            storage: {{ $size }}
+            storage: {{ $size }}      
+      persistentVolumeReclaimPolicy: Delete    
+      lifecycle:
+        mode: Dynamic

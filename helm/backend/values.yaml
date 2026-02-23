@@ -16,8 +16,10 @@ backend:
 
   storage:
   size: 1Gi
-  accessMode: ReadWriteOnce          # For Azure Disk-like classes
-  storageClassName: default          # Or "managed-csi" on AKS
+  accessMode: ReadWriteOnce          
+  storageClassName: default   
+  reclaimPolicy: Delete
+  lifecycleMode: Dynamic       
   mountPath: /app/data
     
   topologySpread:

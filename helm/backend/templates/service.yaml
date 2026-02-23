@@ -7,7 +7,10 @@ metadata:
 spec:
   type: LoadBalancer              
   selector:
-    app: backend
+    # app: backend    
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/instance: backend
+
   ports:
     - port: 3000
       targetPort: 3000
