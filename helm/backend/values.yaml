@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 replicaCount: 3
+=======
+replicaCount: 1
+>>>>>>> 3652d948f8b960997d8746dba1eb4c02b7b2682e
 
 image:
   repository: ajaykumarchoda8143/backend
