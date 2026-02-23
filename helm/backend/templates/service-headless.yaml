@@ -1,14 +1,16 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "backend.headlessName" . }}
+  name: backend-backend-headless
   labels:
     {{- include "backend.labels" . | nindent 4 }}
 spec:
-  clusterIP: 10.0.37.19
+  clusterIP: None
+    # publishNotReadyAddresses: true
   selector:
-    {{- include "backend.selectorLabels" . | nindent 4 }}
+    # {{- include "backend.selectorLabels" . | nindent 4 }}
+    app: backend
   ports:
     - name: http
-      port: {{ .Values.backend.port | default 8080 }}
-      targetPort: http
+      port: 3000
+      targetPort: 3000

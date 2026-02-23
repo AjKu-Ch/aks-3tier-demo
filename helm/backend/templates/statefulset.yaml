@@ -1,3 +1,92 @@
+{{/*
+===============================================================================
+Nil-safe value resolution for both layouts:
+
+A) Root chart (nested under `backend:`):
+   backend:
+     image: { repository, tag, pullPolicy }
+     port: 8080
+     storage: { mountPath, size, accessMode, storageClassName }
+     topologySpread: { enabled: false }
+     env: { ... }
+     mongoUri: "..."
+     probes: { readiness: {...}, liveness: {...} }
+     resources: {...}
+     securityContext: {...}
+     podSecurityContext: {...}
+     imagePullSecrets: [..]
+
+B) Subchart-friendly (root-level values):
+   image: {...}, port: 8080, storage: {...}, topologySpread.enabled, etc.
+
+We avoid deep dotted lookups in function args and instead:
+- convert .Values to a plain map
+- build intermediate maps with default (dict)
+- then coalesce between backend and root values
+===============================================================================
+*/}}
+
+{{- $vals := (fromYaml (toYaml .Values)) -}}
+
+{{- $bRaw      := (index $vals "backend") -}}
+{{- $b         := (default (dict) $bRaw) -}}
+{{- $r         := $vals -}}
+
+{{- $bImage    := (default (dict) (index $b "image")) -}}
+{{- $rImage    := (default (dict) (index $r "image")) -}}
+
+{{- $bStorage  := (default (dict) (index $b "storage")) -}}
+{{- $rStorage  := (default (dict) (index $r "storage")) -}}
+
+{{- $bTS       := (default (dict) (index $b "topologySpread")) -}}
+{{- $rTS       := (default (dict) (index $r "topologySpread")) -}}
+
+{{- $bProbes   := (default (dict) (index $b "probes")) -}}
+{{- $rProbes   := (default (dict) (index $r "probes")) -}}
+
+{{- $bReady    := (default (dict) (index $bProbes "readiness")) -}}
+{{- $rReady    := (default (dict) (index $rProbes "readiness")) -}}
+{{- $bLive     := (default (dict) (index $bProbes "liveness")) -}}
+{{- $rLive     := (default (dict) (index $rProbes "liveness")) -}}
+
+{{- $replicas   := (coalesce (index $b "replicas") (index $r "replicas") 2) -}}
+
+{{- $imageRepo  := (coalesce (index $bImage "repository")  (index $rImage "repository")) -}}
+{{- $imageTag   := (coalesce (index $bImage "tag")         (index $rImage "tag")         "latest") -}}
+{{- $pullPolicy := (coalesce (index $bImage "pullPolicy")  (index $rImage "pullPolicy")  "IfNotPresent") -}}
+
+{{- $port       := (coalesce (index $b "port") (index $r "port") 8080) -}}
+
+{{- $mountPath  := (coalesce (index $bStorage "mountPath")        (index $rStorage "mountPath")        "/app/data") -}}
+{{- $size       := (coalesce (index $bStorage "size")             (index $rStorage "size")             "1Gi") -}}
+{{- $accessMode := (coalesce (index $bStorage "accessMode")       (index $rStorage "accessMode")       "ReadWriteOnce") -}}
+{{- $sc         := (coalesce (index $bStorage "storageClassName") (index $rStorage "storageClassName") "default") -}}
+
+{{- $tsEnabled  := (coalesce (index $bTS "enabled") (index $rTS "enabled") false) -}}
+
+{{- $env        := (coalesce (index $b "env") (index $r "env") (dict)) -}}
+{{- $mongoUri   := (coalesce (index $b "mongoUri") (index $r "mongoUri") "") -}}
+
+{{- $podSC      := (coalesce (index $b "podSecurityContext") (index $r "podSecurityContext") (dict)) -}}
+{{- $ctSC       := (coalesce (index $b "securityContext")    (index $r "securityContext")    (dict)) -}}
+{{- $resources  := (coalesce (index $b "resources")          (index $r "resources")          (dict)) -}}
+
+{{- $imagePulls := (coalesce (index $b "imagePullSecrets")   (index $r "imagePullSecrets")) -}}
+
+{{- $rPath      := (coalesce (index $bReady "path")                (index $rReady "path")                "/healthz") -}}
+{{- $rInit      := (coalesce (index $bReady "initialDelaySeconds") (index $rReady "initialDelaySeconds") 5) -}}
+{{- $rPeriod    := (coalesce (index $bReady "periodSeconds")       (index $rReady "periodSeconds")       10) -}}
+{{- $rTO        := (coalesce (index $bReady "timeoutSeconds")      (index $rReady "timeoutSeconds")      2) -}}
+{{- $rFail      := (coalesce (index $bReady "failureThreshold")    (index $rReady "failureThreshold")    3) -}}
+
+{{- $lPath      := (coalesce (index $bLive "path")                 (index $rLive "path")                 "/livez") -}}
+{{- $lInit      := (coalesce (index $bLive "initialDelaySeconds")  (index $rLive "initialDelaySeconds")  10) -}}
+{{- $lPeriod    := (coalesce (index $bLive "periodSeconds")        (index $rLive "periodSeconds")        15) -}}
+{{- $lTO        := (coalesce (index $bLive "timeoutSeconds")       (index $rLive "timeoutSeconds")       2) -}}
+{{- $lFail      := (coalesce (index $bLive "failureThreshold")     (index $rLive "failureThreshold")     3) -}}
+
+{{- $hasEnv     := or (gt (len $env) 0) (ne $mongoUri "") -}}
+
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -5,7 +94,7 @@ metadata:
   labels:
     {{- include "backend.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.backend.replicas | default 2 }}
+  replicas: {{ $replicas }}
   serviceName: {{ include "backend.headlessName" . }}
   podManagementPolicy: Parallel
   selector:
@@ -17,13 +106,12 @@ spec:
       labels:
         {{- include "backend.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.backend.imagePullSecrets }}
+      {{- if $imagePulls }}
       imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml $imagePulls | nindent 8 }}
       {{- end }}
 
-
-      {{- if .Values.backend.topologySpread.enabled }}
+      {{- if $tsEnabled }}
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
@@ -35,56 +123,61 @@ spec:
 
       containers:
         - name: backend
-          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
-          imagePullPolicy: {{ .Values.backend.image.pullPolicy | default "IfNotPresent" }}
+          image: ajaykumarchoda8143/backend:v17
+          imagePullPolicy: {{ $pullPolicy }}
 
           ports:
             - name: http
-              containerPort: {{ .Values.backend.port | default 8080 }}
+              containerPort: 3000
 
+          {{- if $hasEnv }}
           env:
-
-            {{- range $k, $v := .Values.backend.env }}
+            {{- range $k, $v := $env }}
             - name: {{ $k }}
               value: {{ $v | quote }}
             {{- end }}
-            {{- if .Values.backend.mongoUri }}
+            {{- if $mongoUri }}
             - name: MONGO_URI
-              value: {{ .Values.backend.mongoUri | quote }}
+              value: {{ $mongoUri | quote }}
             {{- end }}
+          {{- end }}
 
           volumeMounts:
             - name: data
-              mountPath: {{ .Values.backend.storage.mountPath | default "/app/data" }}
-
+              mountPath: {{ $mountPath }}
 
           readinessProbe:
             httpGet:
-              path: {{ .Values.backend.probes.readiness.path | default "/healthz" }}
-              port: http
-            initialDelaySeconds: {{ .Values.backend.probes.readiness.initialDelaySeconds | default 5 }}
-            periodSeconds: {{ .Values.backend.probes.readiness.periodSeconds | default 10 }}
-            timeoutSeconds: {{ .Values.backend.probes.readiness.timeoutSeconds | default 2 }}
-            failureThreshold: {{ .Values.backend.probes.readiness.failureThreshold | default 3 }}
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: {{ $rInit }}
+            periodSeconds: {{ $rPeriod }}
+            timeoutSeconds: {{ $rTO }}
+            failureThreshold: {{ $rFail }}
 
           livenessProbe:
             httpGet:
-              path: {{ .Values.backend.probes.liveness.path | default "/livez" }}
-              port: http
-            initialDelaySeconds: {{ .Values.backend.probes.liveness.initialDelaySeconds | default 10 }}
-            periodSeconds: {{ .Values.backend.probes.liveness.periodSeconds | default 15 }}
-            timeoutSeconds: {{ .Values.backend.probes.liveness.timeoutSeconds | default 2 }}
-            failureThreshold: {{ .Values.backend.probes.liveness.failureThreshold | default 3 }}
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: {{ $lInit }}
+            periodSeconds: {{ $lPeriod }}
+            timeoutSeconds: {{ $lTO }}
+            failureThreshold: {{ $lFail }}
 
+          {{- if $resources }}
           resources:
-            {{- toYaml .Values.backend.resources | nindent 12 }}
+            {{- toYaml $resources | nindent 12 }}
+          {{- end }}
 
+          {{- if $ctSC }}
           securityContext:
-            {{- toYaml .Values.backend.securityContext | nindent 12 }}
+            {{- toYaml $ctSC | nindent 12 }}
+          {{- end }}
 
+      {{- if $podSC }}
       securityContext:
-        {{- toYaml .Values.backend.podSecurityContext | nindent 8 }}
-
+        {{- toYaml $podSC | nindent 8 }}
+      {{- end }}
 
   volumeClaimTemplates:
     - metadata:
@@ -93,8 +186,8 @@ spec:
           {{- include "backend.labels" . | nindent 10 }}
       spec:
         accessModes:
-          - {{ .Values.backend.storage.accessMode | default "ReadWriteOnce" }}
-        storageClassName: {{ .Values.backend.storage.storageClassName | default "default" | quote }}
+          - {{ $accessMode }}
+        storageClassName: {{ $sc | quote }}
         resources:
           requests:
-            storage: {{ .Values.backend.storage.size | default "1Gi" }}
+            storage: {{ $size }}
