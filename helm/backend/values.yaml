@@ -1,5 +1,5 @@
 
-replicaCount: 2
+replicas: 1
 
 image:
   repository: ajaykumarchoda8143/backend
@@ -14,12 +14,53 @@ env:
   MONGO_URL: "mongodb://mongodb:27017/testdb"
   FRONTEND_ORIGIN: "http://52.151.203.181"  
 
-resources: {}
+# resources: {}
 
-persistence:
-  enabled: true
-  mountPath: /data
-  accessModes:
-    - ReadWriteOnce
-  size: 1Gi
-  storageClassName: default
+# persistence:
+#   enabled: true
+#   mountPath: /data
+#   accessModes:
+#     - ReadWriteOnce
+#   size: 1Gi
+#   storageClassName: default
+
+  storage:
+    size: 1Gi
+    accessMode: ReadWriteOnce          # For Azure Disk-like classes
+    storageClassName: default          # Or "managed-csi" on AKS
+    mountPath: /app/data
+
+  probes:
+    readiness:
+      path: /healthz
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 2
+      failureThreshold: 3
+    liveness:
+      path: /livez
+      initialDelaySeconds: 10
+      periodSeconds: 15
+      timeoutSeconds: 2
+      failureThreshold: 3
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+  podSecurityContext:
+    runAsNonRoot: true
+    fsGroup: 1000
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    readOnlyRootFilesystem: false
+
+  topologySpread:
+    enabled: true
