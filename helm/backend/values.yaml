@@ -11,8 +11,9 @@ backend:
     port: 3000
 
   env:
-    MONGO_URL: "mongodb://mongodb:27017/testdb"
-    FRONTEND_ORIGIN: "http://52.151.203.181"  
+    FRONTEND_ORIGIN: "http://52.151.203.181"
+    MONGO_URL: "mongodb://mongodb-mongodb-0.mongodb-mongodb-headless.default.svc.cluster.local:27017,mongodb-mongodb-1.mongodb-mongodb-headless.default.svc.cluster.local:27017,mongodb-mongodb-2.mongodb-mongodb-headless.default.svc.cluster.local:27017/?replicaSet=rs0"
+
 
   storage:
   size: 1Gi

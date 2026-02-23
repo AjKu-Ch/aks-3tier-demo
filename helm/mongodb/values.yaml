@@ -1,21 +1,19 @@
-replicaCount: 1
+global:
+  imageRegistry: public.ecr.aws   # prefixes all Bitnami images
 
-image:
-  repository: mongo
-  tag: "6"
-  pullPolicy: IfNotPresent
+mongodb:
+  image:
+    repository: bitnami/mongodb   # becomes public.ecr.aws/bitnami/mongodb
+    tag: latest
+    pullPolicy: Always
 
-service:
-  type: ClusterIP
-  port: 27017
+  architecture: replicaset
+  replicaCount: 1
+  
+  arbiter:
+    enabled: false
 
-
-persistence:
-  enabled: true
-  storageClass: default
-  size: 20Gi
-  accessModes:
-    - ReadWriteOnce
-  mountPath: /data/db
-  existingClaim: ""
-
+  auth:
+    enabled: false
+  persistence:
+    size: 10Gi
