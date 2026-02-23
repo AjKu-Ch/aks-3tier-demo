@@ -16,8 +16,8 @@ spec:
     metadata:
       labels:
         {{- include "backend.selectorLabels" . | nindent 8 }}
-      annotations:
-        checksum/config: {{ include (print .Template.BasePath "/configmap.yaml") . | sha256sum | default "no-config" | quote }}
+      # annotations:
+      #   checksum/config: {{ include (print .Template.BasePath "/configmap.yaml") . | sha256sum | default "no-config" | quote }}
 
     spec:
       {{- with .Values.backend.imagePullSecrets }}
