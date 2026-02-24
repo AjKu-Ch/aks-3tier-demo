@@ -8,7 +8,7 @@ mongodb:
     pullPolicy: Always
 
   architecture: replicaset
-  replicaCount: 1
+  replicaCount: 3
   
   arbiter:
     enabled: false

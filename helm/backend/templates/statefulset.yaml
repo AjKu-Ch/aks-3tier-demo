@@ -125,9 +125,9 @@ spec:
         - name: backend
           image: ajaykumarchoda8143/backend:v17
           imagePullPolicy: {{ $pullPolicy }}
-          {{- if .Values.env }}
+          {{- if .Values.backend.env }}
           env:
-            {{- range .Values.env }}
+            {{- range .Values.backend.env }}
             - name: {{ .name | quote }}
               value: {{ .value | quote }}
             {{- end }}
@@ -138,17 +138,17 @@ spec:
             - name: http
               containerPort: 3000
 
-          {{- if $hasEnv }}
-          env:
-            {{- range $k, $v := $env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-            {{- end }}
-            {{- if $mongoUri }}
-            - name: MONGO_URI
-              value: {{ $mongoUri | quote }}
-            {{- end }}
-          {{- end }}
+          # {{- if $hasEnv }}
+          # env:
+          #   {{- range $k, $v := $env }}
+          #   - name: {{ $k }}
+          #     value: {{ $v | quote }}
+          #   {{- end }}
+          #   {{- if $mongoUri }}
+          #   - name: MONGO_URI
+          #     value: {{ $mongoUri | quote }}
+          #   {{- end }}
+          # {{- end }}
 
           volumeMounts:
             - name: data

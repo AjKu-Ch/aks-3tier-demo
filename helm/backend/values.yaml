@@ -1,5 +1,5 @@
 backend:
-  replicas: 1
+  replicas: 3
 
   image:
     repository: ajaykumarchoda8143/backend
@@ -11,9 +11,14 @@ backend:
     port: 3000
 
   env:
-    FRONTEND_ORIGIN: "http://52.151.203.181"
-    MONGO_URL: "mongodb://mongodb-mongodb-0.mongodb-mongodb-headless.default.svc.cluster.local:27017,mongodb-mongodb-1.mongodb-mongodb-headless.default.svc.cluster.local:27017,mongodb-mongodb-2.mongodb-mongodb-headless.default.svc.cluster.local:27017/?replicaSet=rs0"
+  - name: FRONTEND_ORIGIN
+    value: "http://52.151.203.181"
 
+  - name: MONGO_URL
+    value: "mongodb://mongodb-mongodb-0.mongodb-mongodb-headless.default.svc.cluster.local:27017/?replicaSet=rs0&retryWrites=true&directConnection=false"
+
+  - name: MONGO_URI
+    value: "mongodb://mongodb-mongodb-0.mongodb-mongodb-headless.default.svc.cluster.local:27017/?replicaSet=rs0&retryWrites=true&directConnection=false"
 
   storage:
   size: 1Gi
